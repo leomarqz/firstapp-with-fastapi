@@ -39,7 +39,7 @@ class Transaction(TransactionBase, table=True):
     customer : Customer = Relationship(back_populates="transactions")  # Relationship to customer
      
 class TransactionCreate(TransactionBase):
-    pass
+    customer_id: int = Field(foreign_key="customer.id")
 
 class TransactionUpdate(TransactionBase):
     pass
