@@ -5,7 +5,7 @@ from datetime import datetime
 from fastapi import FastAPI, HTTPException, status as Status
 from sqlmodel import select
 
-from models import CustomerCreate, Customer, Transaction, Invoice
+from models import CustomerCreate, Customer, CustomerUpdate, Transaction, Invoice
 from resources import country_timezones
 from db import session_dependency, update_database
 
@@ -34,8 +34,8 @@ async def get_datetime(iso_code: str):
     }
 
 @app.post("/customers", response_model=Customer)
-async def create_customer(request: CustomerCreate, session: session_dependency):
-    customer = Customer.model_validate( request.model_dump() ) # Create Customer instance from request data
+async def create_customer(customer_data: CustomerCreate, session: session_dependency):
+    customer = Customer.model_validate( customer_data.model_dump() ) # Create Customer instance from request data
     session.add(customer) # To add the new customer
     session.commit() # To persist the new customer
     session.refresh(customer) # To get the generated ID and other defaults
@@ -51,6 +51,19 @@ async def get_customer(customer_id: int, session: session_dependency):
     if not customer_db:
         raise HTTPException(status_code=Status.HTTP_404_NOT_FOUND, detail="Customer not found")
     return customer_db
+
+@app.patch("/customers/{customer_id}", response_model=Customer, status_code=Status.HTTP_201_CREATED)
+async def update_customer(customer_id: int, customer_data: CustomerUpdate, session: session_dependency):
+    customer_db = session.get(Customer, customer_id) 
+    if not customer_db:
+        raise HTTPException(status_code=Status.HTTP_404_NOT_FOUND, detail="Customer not found")
+    customer_data_dict = customer_data.model_dump(exclude_unset=True) # Exluye campos vacios o nulos y actualiza solo los proporcionados
+    customer_db.sqlmodel_update(customer_data_dict)
+    session.add(customer_db)
+    session.commit()
+    session.refresh(customer_db)
+    return customer_db
+
 
 @app.delete("/customers/{customer_id}")
 async def delete_customer(customer_id: int, session: session_dependency):
