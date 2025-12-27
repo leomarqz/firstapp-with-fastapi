@@ -7,6 +7,24 @@ from sqlmodel import Relationship, SQLModel, Field
 # MODELS ==============================================
 # =====================================================
 
+
+   
+# Association table for many-to-many relationship between Customer and Plans 
+# =====================================================
+class CustomerPlan(SQLModel, table=True):
+    id: int | None = Field(primary_key=True)
+    plan_id: int = Field(foreign_key="plan.id")
+    customer_id: int = Field(foreign_key="customer.id")
+    
+# Plan Models
+# =====================================================
+class Plan(SQLModel, table=True):
+    id: int | None = Field(primary_key=True)
+    name: str = Field(default=None)
+    price: float = Field(default=0.0)
+    description: str | None = Field(default=None)
+    customers: list["Customer"] = Relationship(back_populates="plans", link_model=CustomerPlan) 
+
 # Customer Models
 # =====================================================
 class CustomerBase(SQLModel):
@@ -22,8 +40,9 @@ class CustomerUpdate(CustomerBase):
 
 # Customer model for DB
 class Customer(CustomerBase, table=True):
-    id: int | None = Field(default=None, primary_key=True)
+    id: int | None = Field(primary_key=True)
     transactions: list["Transaction"] = Relationship(back_populates="customer")  # Relationship to transactions
+    plans: list[Plan] = Relationship(back_populates="customers", link_model=CustomerPlan)
 
 
 # Transaction Models
@@ -34,7 +53,7 @@ class TransactionBase(SQLModel):
     description: str
 
 class Transaction(TransactionBase, table=True):
-    id: int | None = Field(default=None, primary_key=True)
+    id: int | None = Field(primary_key=True)
     customer_id: int = Field(foreign_key="customer.id")
     customer : Customer = Relationship(back_populates="transactions")  # Relationship to customer
      
